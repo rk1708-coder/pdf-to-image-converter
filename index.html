@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en-US" prefix="og: https://ogp.me/ns#">
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Convert PDF to Image (.JPG, .PNG) in Highest Resolution</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+</head>
+<body class="page-template-default page page-id-41 logged-in wp-custom-logo wp-embed-responsive">
+<header class="header">
+<nav class="navbar bg-gradient-info shadow py-3 navbar-expand-lg">
+<div class="container">
+  PDF to Image Converter
+</div>
+</nav>
+<div class="collapse navbar-collapse" id="navbarSupportedContent">
+</div>
+</header>
+<style>
+  #loader {border:8px solid #eee; border-top:8px solid #3f4047; border-radius: 50%; width:50px; height:50px; animation: spin 1s linear infinite; display: inline-block;}
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  #goback { display: block; max-width: 150px; width: 60%; margin: 15px auto; cursor: pointer; text-align: center; }
+  #loaderouter{justify-content: center; align-items: center; max-width: 100%;height:100vh; display: none; position: fixed; top:0; left: 0; right: 0; margin: 0 auto; width: 100%; background:rgba(0,0,0,0.8);padding:20px;z-index: 999;}
+  #loadercontainer { justify-content: center; align-items: center; max-width:250px; display: flex;flex-direction: column; width: 100%; background: #fff; padding:20px 10px; border-radius: 5px; z-index: 999; }
+  #loadercontainer span { margin-top: 8px;text-align: center;}
+  #loadercontainer i { display: block; font-size: 11px; }
+  #downloadLink.inactive { background-color: #3f4047; }
+  #downloadLink span { display: inline-block; }
+  #message { display: none; padding: 8px 10px; color: #fff; }
+  #message.success { background: #28a745; display: block; }
+  #message.error { background: #dc3545; display: block; }
+  #message a { color: #fff; font-weight: bold; }
+  .canvascontainer { width: 100%; max-height: 300px;position:relative;overflow:hidden;}
+  .canvascontainer:before{position: absolute;width: 100%;height: 100%;content: "PREVIEW";display: flex;justify-content: center;align-items: center;font-weight: bold;color:#999;font-size: 2.8rem;transform: rotate(-45deg);text-shadow: 2px 2px #fff;}
+  canvas#preview img, canvas#preview { max-width: 100%; height: auto; background: #fff; border: 1px solid #ddd; border-radius: 3px; box-shadow: 0px 0px 5px 1px rgba(0,0,0,0.15);    max-height: 290px;
+      margin: 5px 0px;}
+  #pdf_name{width:100%;white-space: nowrap;overflow: hidden;text-overflow: ellipsis;}
+  .container{opacity:1;transition: opacity 0.2s linear 0s;}
+  .container.pdfdata{display:none;opacity:0;transition: opacity 0.2s linear 0s;}
+  canvas#preview { opacity: 0; }
+  canvas#preview.noopacity { opacity: 1; transition: opacity 0.2s linear 0s; }
+  .file-input-label { cursor: pointer; }
+  .file-input-label i { font-size: 5rem; opacity: 0.2; }
+  .file-input-label h2 { opacity: 0.2; }
+  .progress { display: none; }
+  .alert { font-size: 13px; padding: 0.4rem 2rem 0.4rem 1rem; font-weight: 600; transition: top 0.2s linear 0s; }
+  .alert-dismissible { position: fixed; top: -60px; left: 0; right: 0; margin: 0 auto; z-index: 9999; width: 96%; max-width: 360px; }
+  .alert-dismissible .btn-close { padding: 0.65rem; }
+  .alert.showalert, .alert-dismissible.showalert { top: 100px; }
+  .progress { height: auto; font-weight: 600; }
+  .progress-bar { padding: 5px; }
+  label { font-size: 0.8rem; }
+  #drop-area.highlight.file-input-label, #drop-area.file-input-label:hover { border-color:#0d6efd!important; background:#f5f9ff!important; }
+      </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js" integrity="sha512-BbrZ76UNZq5BhH7LL7pn9A4TKQpQeNCHOo65/akfelcIBbcVvYWOFQKPXIrykE3qZxYjmDX573oa4Ywsc7rpTw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js" integrity="sha512-csNcFYJniKjJxRWRV1R7fvnXrycHP6qDR21mgz1ZP55xY5d+aHLfo9/FcGDQLfn2IfngbAHd8LdfsagcCqgTcQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <div id="loaderouter"><div id="loadercontainer"></div></div>
+  <div class="m-4">
+    <h1 class="findmaptitle text-center mb-2">Convert PDF to Image (.JPG and .PNG)</h1>
+    <h2 class="findmapsubtitle text-center mb-4">Custom Higher Resolution / 100% Free Forever / Convert All Pages to Images in Single Click</h2>
+    <form name="frmUpload" id="frmUpload" method="POST" enctype="multipart/form-data">
+            <label for="fileInput" class="file-input-label d-block border rounded py-4 px-4 bg-light text-center" id="drop-area">
+              <h2 class="mt-4 mb-2">Select or Drag-Drop a PDF to Convert to Image - .JPG or .PNG</h2>
+              <div id="selected-file" class="text-secondary">No File Selected...</div>
+            </label>
+          <input type="file" id="fileInput" name="fileInput" accept=".pdf" style="display: none;">
+    </form>
+          </div>
+  <div class="col-lg-12 col-md-12 col-sm-12" style="margin:0 auto;position:relative;" id="hiddenfields">
+    <div class="container p-0 pdfdata" id="pdfdata">
+          <div class="row">
+              <!-- Large Section -->
+              <div class="col-md-3 py-3 justify-content-center align-items-center text-center">
+          <div class="progress mb-4 mx-4">
+            <div class="progress-bar" role="progressbar" style="width:0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+          </div>
+          <div class="canvascontainer">
+          <canvas id="preview" width="200" height="320"></canvas>	
+          </div>
+              </div>
+              <!-- Small Section -->
+              <div class="col-md-9 justify-content-center align-items-center ps-4" id="dataform">
+          <div class="pdf-navigation">
+            <div class="bd-callout bd-callout-warning">
+              <span id="pdf_name" class="mb-2 small d-block mx-2"></span>
+          <span id="pdf_size" class="mb-2 small d-block mx-2"></span>
+            </div>
+          <div class="alert alert-warning mx-2">Actual Download Image Resolution - <span id="image_size"></span></div>
+          <div class="mb-2"><button id="decrease" class="btn btn-small btn-primary mx-2" disabled>Decrease Resolution</button><button id="increase" class="btn btn-small btn-primary mx-2">Increase Resolution</button></div>
+          
+            <div class="mb-2"><span class="pages mb-2 mx-2" style="display:block">Selected Page: <span id="page_num"></span> / Total Pages: <span id="page_count"></span></span>
+            <button id="prev" class="btn btn-small btn-primary mx-2">&#10094;&#10094;</button>
+            <button id="next" class="btn btn-small btn-primary mx-2">&#10095;&#10095;</button>
+            </div>
+          </div>
+          <div class="download">
+            <button id="downloadjpg" class="btn btn-small btn-outline-primary m-2 small"><i class="bi bi-filetype-jpg"></i> Download JPG of Page <span class="cpagenum badge text-bg-primary"></span></button>
+            <button id="downloadpng" class="btn btn-small btn-outline-primary m-2 small"><i class="bi bi-filetype-png"></i> Download PNG of Page <span class="cpagenum badge text-bg-primary"></span></button>
+          </div>
+          <div>
+            <button id="downloadall" class="btn btn-small btn-outline-success m-2 small"><i class="bi bi-file-earmark-arrow-down"></i> Download All Pages <span id="allpages" class="badge text-bg-success"></span></button>
+          </div>
+              </div>
+          </div>
+      </div>
+        <script>
+  var dropArea=document.getElementById("drop-area"),fileInput=document.getElementById("fileInput"),selectedFileDisplay=document.getElementById("selected-file");function preventDefaults(e){e.preventDefault(),e.stopPropagation()}function highlight(){dropArea.classList.add("highlight")}function unhighlight(){dropArea.classList.remove("highlight")}function handleDrop(e){var t=e.dataTransfer.files;fileInput.files=t;var n=new Event("change");fileInput.dispatchEvent(n)}["dragenter","dragover","dragleave","drop"].forEach(e=>{dropArea.addEventListener(e,preventDefaults,!1),document.body.addEventListener(e,preventDefaults,!1)}),["dragenter","dragover"].forEach(e=>{dropArea.addEventListener(e,highlight,!1)}),["dragleave","drop"].forEach(e=>{dropArea.addEventListener(e,unhighlight,!1)}),dropArea.addEventListener("drop",handleDrop,!1);var increaseScaleButton=document.getElementById("increase"),decreaseScaleButton=document.getElementById("decrease");function changeScale(e){var t=scale+e;document.getElementById("decrease").disabled=t<=1,document.getElementById("increase").disabled=t>=6,t>=1&&t<=6&&(scale=t,queueRenderPage(pageNum))}function sanitizeString(e){var t=e.replace(/[-_]+/g," ");return(t=t.replace(/\.pdf$/i,"")).replace(/\b(\w)/g,function(e,t){return t.toUpperCase()})}increaseScaleButton.addEventListener("click",function(){changeScale(.5)}),decreaseScaleButton.addEventListener("click",function(){changeScale(-.5)}),document.getElementById("fileInput").addEventListener("change",function(e){var t=e.target.files[0].name,n=document.querySelector('label[for="fileInput"]'),a=document.getElementById("pdf_name"),d=this.files;d.length>0?selectedFileDisplay.textContent="Selected File: "+d[0].name:selectedFileDisplay.textContent="No File Selected...",a.textContent=t;var l=e.target.files[0];if(l&&"application/pdf"===l.type&&0!==l.size)document.getElementById("loaderouter").style.display="block",document.getElementById("loadercontainer").innerHTML='<div id="loader"></div><span>Processing file...<i>just few seconds...</i></span>',pdfjsLib.getDocument(URL.createObjectURL(l)).promise.then(function(e){pdfDoc=e,document.getElementById("page_count").textContent=pdfDoc.numPages,document.getElementById("allpages").textContent=pdfDoc.numPages,renderPage(pageNum=1),document.getElementById("preview").classList.add("noopacity"),document.getElementById("pdfdata").classList.remove("pdfdata"),document.getElementById("pdf_size").textContent=formatBytes(l.size)+"MB",document.getElementById("loaderouter").style.display="none",document.getElementById("hiddenfields").style.display="block",n.innerHTML='<h2 class="m-0">Select another PDF</h2>'},function(e){console.error("Error: ",e),alert("Failed to load the PDF file. Please try again.")});else{alert("Please select a valid PDF file.");return}});var pdfjsLib=window["pdfjs-dist/build/pdf"];pdfjsLib.GlobalWorkerOptions.workerSrc="//mozilla.github.io/pdf.js/build/pdf.worker.js";var pdfDoc=null,pageNum=1,pageRendering=!1,pageNumPending=null,scale=3,canvas=document.getElementById("preview"),ctx=canvas.getContext("2d");function renderPage(e){pageRendering=!0,pdfDoc.getPage(e).then(function(e){var t=e.getViewport({scale:scale});canvas.height=t.height,canvas.width=t.width,e.render({canvasContext:ctx,viewport:t}).promise.then(function(){pageRendering=!1,null!==pageNumPending&&(renderPage(pageNumPending),pageNumPending=null);var e=Math.round(t.width),n=Math.round(t.height);document.getElementById("image_size").textContent=e+"px Width X "+n+"px Height"})}),document.getElementById("page_num").textContent=e;for(var t=document.getElementsByClassName("cpagenum"),n=0;n<t.length;n++)t[n].textContent=e;e===pdfDoc.numPages?document.getElementById("next").disabled="disabled":document.getElementById("next").disabled="",1===e?document.getElementById("prev").disabled="disabled":document.getElementById("prev").disabled=""}function queueRenderPage(e){pageRendering?pageNumPending=e:renderPage(e)}function onPrevPage(){!(pageNum<=1)&&queueRenderPage(--pageNum)}function onNextPage(){!(pageNum>=pdfDoc.numPages)&&queueRenderPage(++pageNum)}function formatBytes(e,t=2){return 0===e?0:parseFloat((e/1048576).toFixed(t<0?0:t))}function downloadAllPages(){var e=document.getElementById("loaderouter");e.style.display="block",document.getElementById("loadercontainer").innerHTML='<div id="loader"></div><span>Converting pages...<i>please be patient...</i></span>',setTimeout(function(){for(var t=new JSZip,n=[],a=1;a<=pdfDoc.numPages;a++)n.push(renderPageAsImageToDataUrl(a));Promise.all(n).then(function(e){return e.forEach(function(e,n){var a=e.split(",")[1];t.file("page_"+(n+1)+".png",a,{base64:!0})}),t.generateAsync({type:"blob"})}).then(function(t){saveAs(t,"all_pages.zip"),e.style.display="none"}).catch(function(e){console.error("Error: ",e),alert("Failed to download all pages as ZIP. Please try again.")})},1e3)}function renderPageAsImageToDataUrl(e){return new Promise(function(t,n){pdfDoc.getPage(e).then(function(e){var n=e.getViewport({scale:scale}),a=document.createElement("canvas"),d=a.getContext("2d");a.height=n.height,a.width=n.width,e.render({canvasContext:d,viewport:n}).promise.then(function(){t(a.toDataURL("image/png"))})})})}function downloadJPG(){var e=canvas.toDataURL("image/jpeg"),t=document.createElement("a");t.href=e,t.download="page_"+pageNum+".jpg",t.click()}function downloadPNG(){var e=canvas.toDataURL("image/png"),t=document.createElement("a");t.href=e,t.download="page_"+pageNum+".png",t.click()}document.getElementById("prev").addEventListener("click",onPrevPage),document.getElementById("next").addEventListener("click",onNextPage),document.getElementById("downloadjpg").addEventListener("click",downloadJPG),document.getElementById("downloadpng").addEventListener("click",downloadPNG),document.getElementById("downloadall").addEventListener("click",downloadAllPages);
+  </script>
+  </div>
+<footer class="container-fluid main-footer bg-light mt-4">
+<div class="footer text-center border-top py-3" role="contentinfo">
+<span class="bdisc">CREATED BY</span>
+<span class="blinks"><b><a href="https://1pdf.in/">1PDF</a></b></span>
+</div>
+</footer>
+</body>
+</html>
